@@ -37,28 +37,37 @@ export async function getBookBlob(id: string): Promise<Blob | null> {
   }
 }
 
-/** Ajoute un livre (fichier enregistré dans data/books) */
-export async function addBook(
-  file: File,
-  coverDataUrl?: string | null
-): Promise<Book> {
-  const formData = new FormData();
-  formData.set("file", file);
-  if (coverDataUrl) formData.set("cover", coverDataUrl);
-
-  const res = await fetch(`${BASE}/api/books`, {
+/** Réserve un id pour upload client (gros PDF, contourne la limite 4.5 Mo). */
+export async function reserveBook(filename: string): Promise<{
+  id: string;
+  title: string;
+  pathnamePdf: string;
+  pathnameCover: string;
+}> {
+  const res = await fetch(`${BASE}/api/books/reserve`, {
     method: "POST",
-    body: formData,
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ filename }),
   });
-  if (!res.ok) {
-    const text = await res.text();
-    throw new Error(text || "Erreur lors de l'ajout");
-  }
-  const book = (await res.json()) as { id: string; title: string; addedAt: number };
-  return {
-    ...book,
-    cover: coverDataUrl || `/api/books/${book.id}/cover`,
-  };
+  if (!res.ok) throw new Error(await res.text().catch(() => res.statusText));
+  return res.json();
+}
+
+/** Enregistre le livre après upload client (pdfUrl + coverUrl optionnel). */
+export async function confirmBook(
+  id: string,
+  title: string,
+  pdfUrl: string,
+  coverUrl?: string | null
+): Promise<Book> {
+  const res = await fetch(`${BASE}/api/books/confirm`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ id, title, pdfUrl, coverUrl: coverUrl ?? null }),
+  });
+  if (!res.ok) throw new Error(await res.text().catch(() => res.statusText));
+  const book = (await res.json()) as { id: string; title: string; addedAt: number; cover: string | null };
+  return { ...book, cover: book.cover ?? `/api/books/${book.id}/cover` };
 }
 
 /** Supprime un livre (fichiers dans data/books + entrée dans library.json) */

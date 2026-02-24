@@ -114,6 +114,26 @@ export async function getCoverStream(urlOrPath: string) {
   return get(urlOrPath, BLOB_OPTS);
 }
 
+/** Enregistre un livre déjà uploadé (URLs Blob) — utilisé après upload client */
+export async function addBookFromUrls(
+  id: string,
+  title: string,
+  pdfUrl: string,
+  coverUrl?: string | null
+): Promise<StoredBook> {
+  const book: StoredBook = {
+    id,
+    title,
+    addedAt: Date.now(),
+    pdfUrl,
+    coverUrl: coverUrl ?? null,
+  };
+  const lib = await readLibrary();
+  lib.books.push(book);
+  await writeLibrary(lib);
+  return book;
+}
+
 /** Supprime le livre (PDF + cover) et met à jour la library */
 export async function removeBook(id: string): Promise<void> {
   const lib = await readLibrary();

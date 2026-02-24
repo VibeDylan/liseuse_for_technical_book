@@ -2,8 +2,9 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { getAllBooks, addBook, deleteBook } from "@/lib/api-books";
+import { getAllBooks, reserveBook, confirmBook, deleteBook } from "@/lib/api-books";
 import { generatePdfCover } from "@/lib/pdf-cover";
+import { upload } from "@vercel/blob/client";
 import {
   getProgress,
   getFavoriteIds,
@@ -50,8 +51,23 @@ export default function Library() {
       e.target.value = "";
       setAdding(true);
       try {
-        const cover = await generatePdfCover(file);
-        await addBook(file, cover);
+        const { id, title, pathnamePdf, pathnameCover } = await reserveBook(file.name);
+        const pdfBlob = await upload(pathnamePdf, file, {
+          access: "private",
+          handleUploadUrl: "/api/books/upload",
+          multipart: true,
+        });
+        let coverUrl: string | null = null;
+        const coverDataUrl = await generatePdfCover(file);
+        if (coverDataUrl) {
+          const coverBlob = await (await fetch(coverDataUrl)).blob();
+          const coverResult = await upload(pathnameCover, coverBlob, {
+            access: "private",
+            handleUploadUrl: "/api/books/upload",
+          });
+          coverUrl = coverResult.url;
+        }
+        await confirmBook(id, title, pdfBlob.url, coverUrl);
         await load();
       } catch (err) {
         console.error(err);
