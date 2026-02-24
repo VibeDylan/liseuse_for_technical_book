@@ -1,8 +1,9 @@
 # Données Folio (liseuse)
 
-Les livres ajoutés via l’app sont enregistrés ici, ce qui permet de versionner et partager ta bibliothèque.
+Les livres sont stockés dans **Vercel Blob** (préfixe `book_api` dans ton store), pas sur le disque.
 
-- **`library.json`** — liste des livres (id, titre, date d’ajout)
-- **`books/`** — fichiers PDF (`<id>.pdf`) et couvertures (`<id>.jpg`)
+- **`book_api/library.json`** — liste des livres (id, titre, addedAt, pdfUrl, coverUrl)
+- **`book_api/<id>.pdf`** — fichier PDF
+- **`book_api/<id>.jpg`** — couverture (optionnel)
 
-Pour partager ta liseuse : commit ce dossier avec ton repo, déploie l’app (Vercel, etc.) et partage l’URL. Les visiteurs verront les mêmes livres.
+Le dossier `data/` et `data/books/` ne sont plus utilisés en prod ; tu peux les garder pour référence ou les supprimer.

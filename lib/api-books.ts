@@ -19,12 +19,12 @@ async function apiDelete(path: string): Promise<void> {
   if (!res.ok) throw new Error(await res.text().catch(() => res.statusText));
 }
 
-/** Liste des livres (stockés dans data/books + data/library.json) */
+/** Liste des livres (stockés dans Vercel Blob, préfixe book_api) */
 export async function getAllBooks(): Promise<Book[]> {
-  const list = await apiGet<Array<{ id: string; title: string; addedAt: number }>>("/api/books");
+  const list = await apiGet<Array<{ id: string; title: string; addedAt: number; cover: string | null }>>("/api/books");
   return list.map((b) => ({
     ...b,
-    cover: `/api/books/${b.id}/cover`,
+    cover: b.cover ?? `/api/books/${b.id}/cover`,
   }));
 }
 

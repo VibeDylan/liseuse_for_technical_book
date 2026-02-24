@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getBookFilePath, readLibrary } from "@/lib/books-storage";
-import { readFile } from "fs/promises";
+import { readLibrary, getPdfStream } from "@/lib/blob-books";
 
 export async function GET(
   _request: NextRequest,
@@ -17,16 +16,15 @@ export async function GET(
     return NextResponse.json({ error: "Livre introuvable" }, { status: 404 });
   }
 
-  try {
-    const filePath = getBookFilePath(id);
-    const buffer = await readFile(filePath);
-    return new NextResponse(buffer, {
-      headers: {
-        "Content-Type": "application/pdf",
-        "Content-Disposition": `inline; filename="${encodeURIComponent(book.title)}.pdf"`,
-      },
-    });
-  } catch {
+  const result = await getPdfStream(book.pdfUrl);
+  if (!result || result.statusCode !== 200 || !result.stream) {
     return NextResponse.json({ error: "Fichier introuvable" }, { status: 404 });
   }
+
+  return new NextResponse(result.stream, {
+    headers: {
+      "Content-Type": "application/pdf",
+      "Content-Disposition": `inline; filename="${encodeURIComponent(book.title)}.pdf"`,
+    },
+  });
 }
