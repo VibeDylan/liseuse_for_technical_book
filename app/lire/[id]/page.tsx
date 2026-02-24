@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { getBookBlob, getAllBooks } from "@/lib/db";
+import { getBookBlob, getAllBooks } from "@/lib/api-books";
 import PdfReader from "@/components/PdfReader";
 import type { Book } from "@/types/book";
 

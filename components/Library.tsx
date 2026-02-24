@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { getAllBooks, addBook, deleteBook } from "@/lib/db";
+import { getAllBooks, addBook, deleteBook } from "@/lib/api-books";
 import { generatePdfCover } from "@/lib/pdf-cover";
 import {
   getProgress,
@@ -306,6 +306,7 @@ function LibraryCard({
   onDelete,
   onToggleFavorite,
 }: LibraryCardProps) {
+  const [coverError, setCoverError] = useState(false);
   return (
     <Link
       href={`/lire/${book.id}`}
@@ -313,11 +314,12 @@ function LibraryCard({
     >
       {/* Couverture : ratio livre ~2/3 */}
       <div className="relative aspect-[2/3] w-full overflow-hidden bg-[#e7e5e4] dark:bg-[#1c1917]">
-        {book.cover ? (
+        {book.cover && !coverError ? (
           <img
             src={book.cover}
             alt=""
             className="h-full w-full object-cover object-top transition-transform group-hover:scale-[1.02]"
+            onError={() => setCoverError(true)}
           />
         ) : (
           <div className="flex h-full w-full items-center justify-center text-[#a8a29e] dark:text-[#57534e]">
