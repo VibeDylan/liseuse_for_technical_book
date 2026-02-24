@@ -17,6 +17,7 @@ export default function Library() {
   const [books, setBooks] = useState<Book[]>([]);
   const [loading, setLoading] = useState(true);
   const [adding, setAdding] = useState(false);
+  const [uploadStep, setUploadStep] = useState<string | null>(null);
   const [progress, setProgress] = useState<Record<string, number>>({});
   const [favorites, setFavorites] = useState<Set<string>>(new Set());
   const [lastOpened, setLastOpenedState] = useState<Record<string, number>>({});
@@ -50,29 +51,35 @@ export default function Library() {
       if (!file || !file.type.includes("pdf")) return;
       e.target.value = "";
       setAdding(true);
+      setUploadStep("Préparation…");
       try {
         const { id, title, pathnamePdf, pathnameCover } = await reserveBook(file.name);
+        setUploadStep("Envoi du document…");
         const pdfBlob = await upload(pathnamePdf, file, {
           access: "private",
           handleUploadUrl: "/api/books/upload",
           multipart: true,
         });
         let coverUrl: string | null = null;
+        setUploadStep("Génération de la couverture…");
         const coverDataUrl = await generatePdfCover(file);
         if (coverDataUrl) {
           const coverBlob = await (await fetch(coverDataUrl)).blob();
+          setUploadStep("Envoi de la couverture…");
           const coverResult = await upload(pathnameCover, coverBlob, {
             access: "private",
             handleUploadUrl: "/api/books/upload",
           });
           coverUrl = coverResult.url;
         }
+        setUploadStep("Enregistrement…");
         await confirmBook(id, title, pdfBlob.url, coverUrl);
         await load();
       } catch (err) {
         console.error(err);
       } finally {
         setAdding(false);
+        setUploadStep(null);
       }
     },
     [load]
@@ -145,6 +152,19 @@ export default function Library() {
 
   return (
     <div className="min-h-screen bg-[#faf9f7] text-[#1c1917] dark:bg-[#1c1917] dark:text-[#faf9f7]">
+      {adding && (
+        <div className="fixed inset-0 z-50 flex flex-col items-center justify-center gap-6 bg-black/50 backdrop-blur-sm" aria-busy aria-live="polite">
+          <div className="flex flex-col items-center gap-4 rounded-2xl bg-white px-8 py-8 shadow-xl dark:bg-[#292524]">
+            <span className="h-12 w-12 border-4 border-[#1c1917] border-t-transparent rounded-full animate-spin dark:border-[#faf9f7]" />
+            <p className="text-lg font-medium text-[#1c1917] dark:text-[#faf9f7]">
+              {uploadStep ?? "Chargement…"}
+            </p>
+            <p className="text-sm text-[#78716c] dark:text-[#a8a29e]">
+              Ne fermez pas cette page.
+            </p>
+          </div>
+        </div>
+      )}
       <header className="sticky top-0 z-20 border-b border-[#e7e5e4]/80 bg-[#faf9f7]/90 backdrop-blur-md dark:border-[#292524]/80 dark:bg-[#1c1917]/90">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 py-4">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -179,15 +199,15 @@ export default function Library() {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 21l-4.35-4.35M11 18a7 7 0 100-14 7 7 0 000 14z" />
                 </svg>
               </div>
-              <label className="cursor-pointer inline-flex items-center gap-2 rounded-lg bg-[#1c1917] px-4 py-2 text-sm font-medium text-white hover:bg-[#292524] transition-colors dark:bg-[#faf9f7] dark:text-[#1c1917] dark:hover:bg-[#e7e5e4]">
+              <label className={`inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-colors ${adding ? "cursor-wait bg-[#292524] text-white dark:bg-[#e7e5e4] dark:text-[#1c1917]" : "cursor-pointer bg-[#1c1917] text-white hover:bg-[#292524] dark:bg-[#faf9f7] dark:text-[#1c1917] dark:hover:bg-[#e7e5e4]"}`}>
                 {adding ? (
-                  <span className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  <span className="h-4 w-4 shrink-0 border-2 border-current border-t-transparent rounded-full animate-spin" />
                 ) : (
-                  <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="h-4 w-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                   </svg>
                 )}
-                Ajouter un PDF
+                {adding ? "Chargement…" : "Ajouter un PDF"}
                 <input
                   type="file"
                   accept=".pdf,application/pdf"
